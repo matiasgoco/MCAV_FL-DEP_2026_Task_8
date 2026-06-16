@@ -1,0 +1,733 @@
+---
+title: "MCAV_DEP_2026_GE-8936_RawData_Transfer"
+author: "Matias Gomez-Corrales & Ronen Liberman"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    code_folding: hide
+---
+
+# Upload Raw fastq files to NSU Sphyrna cluster
+
+fastq were downloaded to my laptop from Globus:
+
+Dear Dr. Gomez-Corrales,
+
+I hope this message finds you well. The sequencing for your project GE-8936 has been completed, and the results have been uploaded to a shared Globus folder which can be accessed using the following link:
+
+https://app.globus.org/file-manager?origin_id=cad16746-b614-427a-83b9-50f92d6e3e1e&origin_path=%2FNSU-JLopez%2F
+
+We ask that you please arrange for the storage of this data within one week. The above link is only intended for temporarily staging the data.
+
+Best,
+Emil
+
+UF	
+Emil Furat
+Bioinformatics Analyst I
+UF Research | Interdisciplinary Center for Biotechnology Research
+University of Florida
+furat.e@ufl.edu
+(352) 273-8058
+
+
+TASK DETAILS
+Task ID: 23f8b6c6-68c4-11f1-a3b9-0afff5fcf7d7
+Task Type: TRANSFER
+Status: SUCCEEDED
+Source: ICBR-Customer-Data
+Destination: MGC_Mac_Book
+Label: MCAV_Sequencing_Results_GE-8936
+Request Time: 2026-06-15 14:11:45.819374 (UTC)
+Completion Time: 2026-06-15 15:40:47.311926 (UTC)
+Files Transfered: 168
+Directories Transfered: 31
+Bytes Transfered: 139551465384
+Effective Speed: 26125931 Bytes per Second
+Transfer Settings:
+- verify file integrity after transfer
+- transfer is encrypted
+- overwriting all files on destination
+
+View the task in the Globus Web app here:
+https://nam10.safelinks.protection.outlook.com/?url=https%3A%2F%2Fapp.globus.org%2Factivity%2F23f8b6c6-68c4-11f1-a3b9-0afff5fcf7d7%2Foverview&data=05%7C02%7Cmgomezco%40nova.edu%7C9291411e16ff4a51adb508decaf4829f%7C2c2b2d312e3e4df1b571fb37c042ff1b%7C0%7C0%7C639171348721834739%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=tY5926GEL9bSoSWyRVsAkwevW7f4pTRQhUS96ZieBtQ%3D&reserved=0
+
+The list of successfully transferred files will be available for 30 days after the transfer is complete. You can view the list at:
+https://nam10.safelinks.protection.outlook.com/?url=https%3A%2F%2Fapp.globus.org%2Factivity%2F23f8b6c6-68c4-11f1-a3b9-0afff5fcf7d7%2Fevents%3Ffilter%3Dsuccessful_transfers&data=05%7C02%7Cmgomezco%40nova.edu%7C9291411e16ff4a51adb508decaf4829f%7C2c2b2d312e3e4df1b571fb37c042ff1b%7C0%7C0%7C639171348721865866%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=u%2FECu1TTKvNgSzIQnfoHtwAxxOGadb324SNbXy0oJmU%3D&reserved=0
+
+This is a courtesy notification. Please do not reply to this email.
+
+The Globus Team
+support@globus.org
+
+
+Connect to NSU VPN if off campus
+
+NOte: $ indicates run code to differentiate from output, in other words you dont type the dollar sign.
+
+```{bash, eval=FALSE}
+$ ssh mgomezco@researchhpc.nova.edu
+```
+
+Check quota
+
+```{bash,  eval=FALSE}
+$ quota -s
+```
+
+```{bash,  eval=FALSE}
+Disk quotas for user mgomezco (uid 1012): 
+     Filesystem   space   quota   limit   grace   files   quota   limit   grace
+172.16.8.31:/cm/shared
+                  3061G   6192G   6292G            180k    500k    505k   
+```
+
+
+Make a new folder
+
+```{bash,  eval=FALSE}
+mkdir MCAV_DEP_2026_Parentage_CBASS
+```
+
+
+Check cluster policies: https://www.nova.edu/oiit/high-performance-computing/index.html
+
+From laptop local terminal and connected to NSU VPN type,
+
+Use rsync — it's resumable, shows progress, and skips files already transferred if interrupted:
+
+Flags:
+
+-a — archive mode (preserves permissions, timestamps, subdirs)
+-v — verbose (shows files as they transfer)
+-z — compresses during transfer (helps for FASTQ files)
+-P — shows progress per file AND allows resume if interrupted
+Key advantage over scp -r: if the connection drops mid-transfer, just re-run the exact same command and it picks up where it left off — already-transferred files are skipped.
+
+Note the trailing / after the destination path — this puts the folder inside MCAV_DEP_2026_Parentage_CBASS/ (not next to it).
+
+If it's a very large dataset and transfer speed is a bottleneck, you already have Aspera installed on the cluster, but rsync is simpler for local→cluster pushes.
+
+```{bash, eval=FALSE}
+$ rsync -avzP \
+  /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936 \
+  mgomezco@researchhpc.nova.edu:~/MCAV_DEP_2026_Parentage_CBASS/
+```
+
+Also back the folder in my external hard drive once the cluster transfer is done.
+
+-a = --archive
+-v = --verbose
+-P = --partial --progress
+caffeinate -i = prevent macOS sleep during transfer
+
+```{bash, eval=FALSE}
+$ caffeinate -i rsync -avP \
+  /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936 \
+  /Volumes/G-TECH_ArmorATD_MATIAS_GC/URI_Data/ \
+  2>> /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936_rsync_errors.log
+```
+
+Back to the cluster
+
+At the sequencing core (UF-ICBR) they ran fastQC on the results so that we can compile the results with multiQC
+
+```{bash, eval=FALSE}
+$ ls MCAV_DEP_2026_Parentage_CBASS/MCAV_Sequencing_Results_GE-8936/GE-8936/FastQC/*fastqc.html | wc -l
+```
+
+```{bash, eval=FALSE}
+56
+```
+
+So 28 reports for R1, and 28 for R2 reads
+
+# MultiQC on FastQC reports
+
+```{bash, eval=FALSE}
+$ module load multiqc/
+```
+
+
+```{bash, eval=FALSE}
+$ cd MCAV_DEP_2026_Parentage_CBASS/MCAV_Sequencing_Results_GE-8936/GE-8936/FastQC/
+```
+
+
+Run MultQC to agreggate FastQC html reports
+
+
+```{bash, eval=FALSE}
+$ multiqc ./ -o ./
+
+mv ./multiqc_report.html ./MCAV_Sequencing_Results_GE_8936_FastQC_MultiQC_report.html
+```
+
+
+```{bash}
+/// MultiQC 🔍 v1.29
+
+     version_check | MultiQC Version v1.35 now available!
+       file_search | Search path: /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_Sequencing_Results_GE-8936/GE-8936/FastQC
+         searching | ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 112/112  
+            fastqc | Found 56 reports
+     write_results | Data        : multiqc_data
+     write_results | Report      : multiqc_report.html
+           multiqc | MultiQC complete
+```
+
+Rename file
+
+```{bash, eval=FALSE}
+$ mv ./multiqc_report.html ./MCAV_Sequencing_Results_GE_8936_FastQC_MultiQC_report.html
+```
+
+Download  MCAV_Sequencing_Results_GE_8936_FastQC_MultiQC_report.html to local
+
+
+From a local terminal window
+
+```{bash, eval=FALSE}
+$ scp mgomezco@researchhpc.nova.edu:/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_Sequencing_Results_GE-8936/GE-8936/FastQC/MCAV_Sequencing_Results_GE_8936_FastQC_MultiQC_report.html /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936
+```
+
+
+# Move all reads from their subfolders into a new folder without subdirs to have an eeasy path for later submission to NCBI SRA submission
+
+```{bash, eval=FALSE}
+$ ls /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_Sequencing_Results_GE-8936/GE-8936/GE-8936-JLopez-10B-23KNNCLT3-Lane3/
+```
+
+
+```{bash, eval=FALSE}
+GE-8936_10_MC19-31B_7-206_5-254_L003        GE-8936_17_5-Control_7-213_5-261_L003  GE-8936_23_3-Plus-6_7-219_5-267_L003                 GE-8936_3_MC19-10_7-199_5-247_L003
+GE-8936_11_MC19-34_7-207_5-255_L003         GE-8936_18_6-Control_7-214_5-262_L003  GE-8936_24_7-Plus-6_7-220_5-268_L003                 GE-8936_4_MC19-18A_7-200_5-248_L003
+GE-8936_12_MC24-01_7-208_5-256_L003         GE-8936_19_1-Plus-3_7-215_5-263_L003   GE-8936_25_MC24-01-Sperm-replicate_7-221_5-269_L003  GE-8936_5_MC19-18B_7-201_5-249_L003
+GE-8936_13_MC24-02_7-209_5-257_L003         GE-8936_1_MC19-01_7-197_5-245_L003     GE-8936_26_5-Control-replicate_7-222_5-270_L003      GE-8936_6_MC20-01_7-202_5-250_L003
+GE-8936_14_MC19-18B-Sperm_7-210_5-258_L003  GE-8936_20_8-Plus-3_7-216_5-264_L003   GE-8936_27_8-Plus-3-replicate_7-223_5-271_L003       GE-8936_7_MC19-23A_7-203_5-251_L003
+GE-8936_15_MC24-01-Sperm_7-211_5-259_L003   GE-8936_21_9-Plus-3_7-217_5-265_L003   GE-8936_28_7-Plus-6-replicate_7-224_5-272_L003       GE-8936_8_MC19-23B_7-204_5-252_L003
+GE-8936_16_4-Control_7-212_5-260_L003       GE-8936_22_2-Plus-6_7-218_5-266_L003   GE-8936_2_MC19-04_7-198_5-246_L003                   GE-8936_9_MC19-29_7-205_5-253_L003
+```
+
+
+
+```{bash, eval=FALSE}
+$ scp mgomezco@researchhpc.nova.edu:/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_Sequencing_Results_GE-8936/GE-8936/FastQC/MCAV_Sequencing_Results_GE_8936_FastQC_MultiQC_report.html /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936
+```
+
+
+```{bash, eval=FALSE}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS
+```
+
+
+```{bash, eval=FALSE}
+$ mkdir MCAV_GE_8936_SRA_Submission
+```
+
+Let's find all fastq.gz files within GE-8936-JLopez-10B-23KNNCLT3-Lane3
+
+To count all the *.fastq.gz files within the specified directory and its subdirectories, you can use the find command combined with wc -l (word count with line count) to count the number of matching files.
+
+Here’s the command:
+
+```{bash, eval=FALSE}
+$ find MCAV_Sequencing_Results_GE-8936/GE-8936/GE-8936-JLopez-10B-23KNNCLT3-Lane3 -type f -name "*.fastq.gz" | wc -l
+```
+
+```{bash, eval=FALSE}
+56
+```
+
+56 files which is correct as there is 28 samples and this is pair-end data so two files per sample 28X2= 56
+ 
+Now move all files to MCAV_GE_8936_SRA_Submission
+
+Search for all .fastq.gz files within the GE-8936-JLopez-10B-23KNNCLT3-Lane3 directory and its subdirectories.
+
+Move each file it finds to the Octo_RNAseq_2025_SRA_Submission folder.
+
+find GE-8936-JLopez-10B-23KNNCLT3-Lane3 searches within that directory and its subdirectories.
+
+-type f ensures that only files (not directories) are selected.
+
+-name "*.fastq.gz" filters for files ending with .fastq.gz.
+
+-exec mv {} MCAV_GE_8936_SRA_Submission/ \; moves each found file to the MCAV_GE_8936_SRA_Submission  directory.
+
+
+```{bash, eval=FALSE}
+$ find MCAV_Sequencing_Results_GE-8936/GE-8936/GE-8936-JLopez-10B-23KNNCLT3-Lane3 -type f -name "*.fastq.gz" -exec mv {} MCAV_GE_8936_SRA_Submission/ \;
+```
+
+Cheking that all files are now in 
+
+```{bash}
+$ ls MCAV_GE_8936_SRA_Submission 
+```
+
+```{bash}
+1-Plus-3_S19_L003_R1_001.fastq.gz             7-Plus-6-replicate_S28_L003_R1_001.fastq.gz  MC19-10_S3_L003_R1_001.fastq.gz          MC19-31B_S10_L003_R1_001.fastq.gz
+1-Plus-3_S19_L003_R2_001.fastq.gz             7-Plus-6-replicate_S28_L003_R2_001.fastq.gz  MC19-10_S3_L003_R2_001.fastq.gz          MC19-31B_S10_L003_R2_001.fastq.gz
+2-Plus-6_S22_L003_R1_001.fastq.gz             7-Plus-6_S24_L003_R1_001.fastq.gz            MC19-18A_S4_L003_R1_001.fastq.gz         MC19-34_S11_L003_R1_001.fastq.gz
+2-Plus-6_S22_L003_R2_001.fastq.gz             7-Plus-6_S24_L003_R2_001.fastq.gz            MC19-18A_S4_L003_R2_001.fastq.gz         MC19-34_S11_L003_R2_001.fastq.gz
+3-Plus-6_S23_L003_R1_001.fastq.gz             8-Plus-3-replicate_S27_L003_R1_001.fastq.gz  MC19-18B_S5_L003_R1_001.fastq.gz         MC20-01_S6_L003_R1_001.fastq.gz
+3-Plus-6_S23_L003_R2_001.fastq.gz             8-Plus-3-replicate_S27_L003_R2_001.fastq.gz  MC19-18B_S5_L003_R2_001.fastq.gz         MC20-01_S6_L003_R2_001.fastq.gz
+4-Control_S16_L003_R1_001.fastq.gz            8-Plus-3_S20_L003_R1_001.fastq.gz            MC19-18B-Sperm_S14_L003_R1_001.fastq.gz  MC24-01_S12_L003_R1_001.fastq.gz
+4-Control_S16_L003_R2_001.fastq.gz            8-Plus-3_S20_L003_R2_001.fastq.gz            MC19-18B-Sperm_S14_L003_R2_001.fastq.gz  MC24-01_S12_L003_R2_001.fastq.gz
+5-Control-replicate_S26_L003_R1_001.fastq.gz  9-Plus-3_S21_L003_R1_001.fastq.gz            MC19-23A_S7_L003_R1_001.fastq.gz         MC24-01-Sperm-replicate_S25_L003_R1_001.fastq.gz
+5-Control-replicate_S26_L003_R2_001.fastq.gz  9-Plus-3_S21_L003_R2_001.fastq.gz            MC19-23A_S7_L003_R2_001.fastq.gz         MC24-01-Sperm-replicate_S25_L003_R2_001.fastq.gz
+5-Control_S17_L003_R1_001.fastq.gz            MC19-01_S1_L003_R1_001.fastq.gz              MC19-23B_S8_L003_R1_001.fastq.gz         MC24-01-Sperm_S15_L003_R1_001.fastq.gz
+5-Control_S17_L003_R2_001.fastq.gz            MC19-01_S1_L003_R2_001.fastq.gz              MC19-23B_S8_L003_R2_001.fastq.gz         MC24-01-Sperm_S15_L003_R2_001.fastq.gz
+6-Control_S18_L003_R1_001.fastq.gz            MC19-04_S2_L003_R1_001.fastq.gz              MC19-29_S9_L003_R1_001.fastq.gz          MC24-02_S13_L003_R1_001.fastq.gz
+6-Control_S18_L003_R2_001.fastq.gz            MC19-04_S2_L003_R2_001.fastq.gz              MC19-29_S9_L003_R2_001.fastq.gz          MC24-02_S13_L003_R2_001.fastq.gz
+```
+
+```{bash}
+$ ls MCAV_GE_8936_SRA_Submission | wc -l
+```
+
+```{bash}
+56
+```
+
+
+# Fastp 
+
+```{bash, eval=FALSE}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS
+```
+
+```{bash, eval=FALSE}
+$ mkdir Scripts
+$ cd Scripts
+```
+
+For WGS, a few parameters need revisiting:
+
+--length_required 50
+Fine for WGS — keeps reads long enough for reliable alignment. ✅
+
+-q 20 (min base quality Phred ≥20)
+Standard for WGS. ✅
+
+-u 30 (max % unqualified bases per read)
+30% is generous — for WGS you typically want stricter. Recommend -u 20 to discard reads where >20% of bases are below Q20.
+
+-n 5 (max N bases per read)
+Reasonable. ✅
+
+--detect_adapter_for_pe
+Correct for PE WGS when adapter sequences aren't known. ✅
+
+-w 4 (threads)
+Matches --cpus-per-task=4. ✅
+
+Missing for WGS:
+
+--correction — enables overlap-based error correction for PE reads, recommended for WGS
+--overlap_min_len 30 — minimum overlap length for correction (default 30, worth making explicit)
+
+```{bash, eval=FALSE}
+$ nano  MCAV_GE_8936_fastp_run.sh 
+```
+
+
+```{bash, eval=FALSE}
+#!/bin/bash
+#SBATCH --job-name=MCAV_GE_8936_fastp
+#SBATCH --output=/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/MCAV_GE_8936_fastp_%a.out
+#SBATCH --error=/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/MCAV_GE_8936_fastp_%a.err
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+#SBATCH --time=06:00:00
+#SBATCH --array=1-28
+#SBATCH --mail-user=mgomezco@nova.edu
+# Notify at start, end, or failure
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+module load fastp
+
+INPUT_DIR="/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission"
+OUTPUT_DIR="/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936"
+mkdir -p "$OUTPUT_DIR"
+
+# Build sorted list of R1 files; pick the one matching this array index
+R1=$(find "$INPUT_DIR" -type f -name "*_R1_001.fastq.gz" | sort | sed -n "${SLURM_ARRAY_TASK_ID}p")
+
+BASE=$(basename "$R1" "_R1_001.fastq.gz")
+R2="${R1/_R1_001.fastq.gz/_R2_001.fastq.gz}"
+
+fastp \
+    -i "$R1" \
+    -I "$R2" \
+    -o "$OUTPUT_DIR/${BASE}_R1.clean.fastq.gz" \
+    -O "$OUTPUT_DIR/${BASE}_R2.clean.fastq.gz" \
+    -q 20 -u 20 -n 5 \
+    --detect_adapter_for_pe \
+    --correction \
+    --length_required 50 \
+    -h "$OUTPUT_DIR/${BASE}_fastp.html" \
+    -j "$OUTPUT_DIR/${BASE}_fastp.json" \
+    -w 4
+```
+
+Key changes from serial version:
+
+--array=1-28 — launches 28 independent jobs, one per sample
+--time=04:00:00 — reduced from 48h to 4h per sample (plenty for 35M reads)
+%a in log filenames — each job gets its own .out/.err (e.g. _1.out, _2.out)
+sed -n "${SLURM_ARRAY_TASK_ID}p" — each job picks its sample by array index from a sorted file list
+Removed the if [[ -f "$R2" ]] check — if R2 is missing something is wrong and you want the job to fail loudly, not silently skip
+
+Before submitting, verify the file list order looks correct:
+
+```{bash, eval=FALSE}
+$ find /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission -type f -name "*_R1_001.fastq.gz" | sort
+```
+
+```{bash}
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/1-Plus-3_S19_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/2-Plus-6_S22_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/3-Plus-6_S23_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/4-Control_S16_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/5-Control-replicate_S26_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/5-Control_S17_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/6-Control_S18_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/7-Plus-6-replicate_S28_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/7-Plus-6_S24_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/8-Plus-3-replicate_S27_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/8-Plus-3_S20_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/9-Plus-3_S21_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-01_S1_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-04_S2_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-10_S3_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-18A_S4_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-18B_S5_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-18B-Sperm_S14_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-23A_S7_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-23B_S8_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-29_S9_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-31B_S10_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC19-34_S11_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC20-01_S6_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC24-01_S12_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC24-01-Sperm-replicate_S25_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC24-01-Sperm_S15_L003_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission/MC24-02_S13_L003_R1_001.fastq.gz
+```
+
+
+```{bash, eval=FALSE}
+$ sbatch MCAV_GE_8936_fastp_run.sh
+```
+
+Submitted batch job 18382
+Submitted batch job 18410
+
+
+
+```{bash, eval=FALSE}
+$ sacct -j 18410
+```
+
+
+```{bash, eval=FALSE}
+JobID           JobName  Partition    Account  AllocCPUS      State ExitCode 
+------------ ---------- ---------- ---------- ---------- ---------- -------- 
+18410_1      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_1.bat+      batch                                4  COMPLETED      0:0 
+18410_2      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_2.bat+      batch                                4  COMPLETED      0:0 
+18410_3      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_3.bat+      batch                                4  COMPLETED      0:0 
+18410_4      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_4.bat+      batch                                4  COMPLETED      0:0 
+18410_5      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_5.bat+      batch                                4  COMPLETED      0:0 
+18410_6      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_6.bat+      batch                                4  COMPLETED      0:0 
+18410_7      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_7.bat+      batch                                4  COMPLETED      0:0 
+18410_8      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_8.bat+      batch                                4  COMPLETED      0:0 
+18410_9      MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_9.bat+      batch                                4  COMPLETED      0:0 
+18410_10     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_10.ba+      batch                                4  COMPLETED      0:0 
+18410_11     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_11.ba+      batch                                4  COMPLETED      0:0 
+18410_12     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_12.ba+      batch                                4  COMPLETED      0:0 
+18410_13     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_13.ba+      batch                                4  COMPLETED      0:0 
+18410_14     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_14.ba+      batch                                4  COMPLETED      0:0 
+18410_15     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_15.ba+      batch                                4  COMPLETED      0:0 
+18410_16     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_16.ba+      batch                                4  COMPLETED      0:0 
+18410_17     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_17.ba+      batch                                4  COMPLETED      0:0 
+18410_18     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_18.ba+      batch                                4  COMPLETED      0:0 
+18410_19     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_19.ba+      batch                                4  COMPLETED      0:0 
+18410_20     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_20.ba+      batch                                4  COMPLETED      0:0 
+18410_21     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_21.ba+      batch                                4  COMPLETED      0:0 
+18410_22     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_22.ba+      batch                                4  COMPLETED      0:0 
+18410_23     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_23.ba+      batch                                4  COMPLETED      0:0 
+18410_24     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_24.ba+      batch                                4  COMPLETED      0:0 
+18410_25     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_25.ba+      batch                                4  COMPLETED      0:0 
+18410_26     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_26.ba+      batch                                4  COMPLETED      0:0 
+18410_27     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_27.ba+      batch                                4  COMPLETED      0:0 
+18410_28     MCAV_GE_8+       defq                     4  COMPLETED      0:0 
+18410_28.ba+      batch                                4  COMPLETED      0:0 
+```
+
+count htmls
+
+```{bash, eval=FALSE}
+$ ls fastp_clean_reads_GE_8936/*html | wc -l
+```
+
+```{bash, eval=FALSE}
+28
+```
+
+[mgomezco@fldpp-rhpclogin001 MCAV_DEP_2026_Parentage_CBASS]$ du -sh fastp_clean_reads_GE_8936/
+110G    fastp_clean_reads_GE_8936/
+[mgomezco@fldpp-rhpclogin001 MCAV_DEP_2026_Parentage_CBASS]$ du -sh MCAV_GE_8936_SRA_Submission
+130G    MCAV_GE_8936_SRA_Submission
+[mgomezco@fldpp-rhpclogin001 MCAV_DEP_2026_Parentage_CBASS]$ ls fastp_clean_reads_GE_8936/*html | wc -l
+28
+
+# MultiQC on Fastp reports
+
+```{bash, eval=FALSE}
+$ module load multiqc/
+```
+
+
+Run MultQC to agreggate FastP html reports
+
+
+```{bash,eval=FALSE}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS
+
+$ multiqc ./fastp_clean_reads_GE_8936/ -o ./fastp_clean_reads_GE_8936/
+
+```
+
+
+```{bash}
+/// MultiQC 🔍 v1.29
+
+     version_check | MultiQC Version v1.35 now available!
+       file_search | Search path: /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936
+         searching | ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 112/112  
+             fastp | Found 28 reports
+     write_results | Data        : fastp_clean_reads_GE_8936/multiqc_data
+     write_results | Report      : fastp_clean_reads_GE_8936/multiqc_report.html
+           multiqc | MultiQC complete
+```
+
+
+Rename file
+
+```{bash, eval=FALSE}
+$ mv ./fastp_clean_reads_GE_8936/multiqc_report.html ./fastp_clean_reads_GE_8936/MCAV_Sequencing_Results_GE_8936_FastP_MultiQC_report.html
+```
+
+Download  MCAV_Sequencing_Results_GE_8936_FastP_MultiQC_report.html to local
+
+
+From a local terminal window
+
+```{bash, eval=FALSE}
+$ scp mgomezco@researchhpc.nova.edu:/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936/MCAV_Sequencing_Results_GE_8936_FastP_MultiQC_report.html /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936
+```
+
+```{bash, eval=FALSE}
+$ scp mgomezco@researchhpc.nova.edu:/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936/MCAV_Sequencing_Results_GE_8936_FastP_MultiQC_report.html
+/Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936
+```
+
+# NCBI SRA submission
+
+To have only sample names make a list with forward files only to create the metadata needed for NCBI
+
+```{bash}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission
+$ ls -1 *R1_001.fastq.gz
+
+```
+
+```{bash}
+1-Plus-3_S19_L003_R1_001.fastq.gz
+2-Plus-6_S22_L003_R1_001.fastq.gz
+3-Plus-6_S23_L003_R1_001.fastq.gz
+4-Control_S16_L003_R1_001.fastq.gz
+5-Control-replicate_S26_L003_R1_001.fastq.gz
+5-Control_S17_L003_R1_001.fastq.gz
+6-Control_S18_L003_R1_001.fastq.gz
+7-Plus-6-replicate_S28_L003_R1_001.fastq.gz
+7-Plus-6_S24_L003_R1_001.fastq.gz
+8-Plus-3-replicate_S27_L003_R1_001.fastq.gz
+8-Plus-3_S20_L003_R1_001.fastq.gz
+9-Plus-3_S21_L003_R1_001.fastq.gz
+MC19-01_S1_L003_R1_001.fastq.gz
+MC19-04_S2_L003_R1_001.fastq.gz
+MC19-10_S3_L003_R1_001.fastq.gz
+MC19-18A_S4_L003_R1_001.fastq.gz
+MC19-18B_S5_L003_R1_001.fastq.gz
+MC19-18B-Sperm_S14_L003_R1_001.fastq.gz
+MC19-23A_S7_L003_R1_001.fastq.gz
+MC19-23B_S8_L003_R1_001.fastq.gz
+MC19-29_S9_L003_R1_001.fastq.gz
+MC19-31B_S10_L003_R1_001.fastq.gz
+MC19-34_S11_L003_R1_001.fastq.gz
+MC20-01_S6_L003_R1_001.fastq.gz
+```
+
+
+
+
+```{bash}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission
+
+$ ls -1 *R1_002.fastq.gz
+```
+
+
+```{bash, eval=FALSE}
+1-Plus-3_S19_L003_R2_001.fastq.gz
+2-Plus-6_S22_L003_R2_001.fastq.gz
+3-Plus-6_S23_L003_R2_001.fastq.gz
+4-Control_S16_L003_R2_001.fastq.gz
+5-Control-replicate_S26_L003_R2_001.fastq.gz
+5-Control_S17_L003_R2_001.fastq.gz
+6-Control_S18_L003_R2_001.fastq.gz
+7-Plus-6-replicate_S28_L003_R2_001.fastq.gz
+7-Plus-6_S24_L003_R2_001.fastq.gz
+8-Plus-3-replicate_S27_L003_R2_001.fastq.gz
+8-Plus-3_S20_L003_R2_001.fastq.gz
+9-Plus-3_S21_L003_R2_001.fastq.gz
+MC19-01_S1_L003_R2_001.fastq.gz
+MC19-04_S2_L003_R2_001.fastq.gz
+MC19-10_S3_L003_R2_001.fastq.gz
+MC19-18A_S4_L003_R2_001.fastq.gz
+MC19-18B_S5_L003_R2_001.fastq.gz
+MC19-18B-Sperm_S14_L003_R2_001.fastq.gz
+MC19-23A_S7_L003_R2_001.fastq.gz
+MC19-23B_S8_L003_R2_001.fastq.gz
+MC19-29_S9_L003_R2_001.fastq.gz
+MC19-31B_S10_L003_R2_001.fastq.gz
+MC19-34_S11_L003_R2_001.fastq.gz
+MC20-01_S6_L003_R2_001.fastq.gz
+MC24-01_S12_L003_R2_001.fastq.gz
+MC24-01-Sperm-replicate_S25_L003_R2_001.fastq.gz
+MC24-01-Sperm_S15_L003_R2_001.fastq.gz
+MC24-02_S13_L003_R2_001.fastq.gz
+```
+
+# From the SRA submission portal
+## Aspera command line instructions
+
+ Aspera command line provides a fast upload connection over intercontinental distances and has a retry capability for failed connections. Support from your systems administration may be required to set this up properly.
+Uploading your data via Aspera command line:
+
+    Download and install the Aspera Connect software. From that link click on 'IBM Aspera Connect', then choose the 'Download now...' link for your operating system and install the downloaded app. The ascp program can be found in your install directory: .../Aspera Connect/bin/ascp , C:\Users\\AppData\Local\Programs\IBM\Aspera Connect\bin, etc.
+    Download the key file. Please do not share this key file. Do not include this information or key file on a public page. This information is regularly updated as per our security policies.
+
+    You may use the following command to upload files via Aspera Command-Line:
+    ascp -i <path/to/key_file> -QT -l100m -k1 -d <path/to/folder/containing files> subasp@upload.ncbi.nlm.nih.gov:uploads/matiasgcvc_gmail.com_iU5lkx0B
+
+    Where:
+    <path/to/key_file> must be an absolute path even if the key is in your current working directory, e.g.: /home/keys/aspera.openssh
+    <path/to/folder/containing files> needs to specify the local folder that contains all of the files to upload.
+    Using the -d option in your command will ensure this directory is created in your preload area.
+
+    Note: If you upload your files to your account-level directory, you will not be able to use them in your submission. Files uploaded to the account level will be moved to a directory named moved_by_ncbi and subject to deletion after 30 days of inactivity. Therefore, please transfer files to a sub-directory inside your account-level directory.
+
+After upload, select your preload folder from the Files step of your submission.
+
+Note: it takes at least 10 minutes for uploaded files to become available for selection within a submission.
+
+Please complete your submission within 30 days of creating a folder. If you upload files and do not submit them, they will be automatically deleted 30 days after folder creation. 
+
+
+download key to local and thenmake a txt file and paste it
+
+Download the key file. Please do not share this key file. Do not include this information or key file on a public page. This information is regularly updated as per our security policies. 
+```{bash, eval=FALSE}
+$ cd Scripts
+$ nano aspera.openssh
+$ chmod 600 /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/aspera.openssh
+```
+
+You can verify it worked with:
+
+```{bash, eval=FALSE}
+$ ls -la /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/aspera.openssh
+```
+-rw------- 1 mgomezco hcas 2459 Jun 15 19:13 /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/aspera.openssh
+
+
+## Aspera script
+
+Step 1 — Start a tmux session on the login node
+
+```{bash, eval=FALSE}
+$ tmux new -s mcav_sra_upload
+```
+
+
+```{bash, eval=FALSE}
+$ module load aspera/4.2.13.820
+
+ascp \
+  -i /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/aspera.openssh \
+  -QT -l500m -k1 \
+  -d /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_SRA_Submission \
+  subasp@upload.ncbi.nlm.nih.gov:uploads/matiasgcvc_gmail.com_iU5lkx0B
+```
+
+Step 3 — Detach and leave it running
+Press Ctrl+B, then D
+You can log off completely — the transfer keeps running. To check on it later:
+
+```{bash, eval=FALSE}
+$ tmux attach -t mcav_sra_upload
+```
+
+And just like last time, if it drops mid-transfer, just re-run the exact same ascp command inside tmux — the -k1 flag means it skips already-uploaded files and picks up where it left off.
+
+Inside the tmux session, just type:
+```{bash, eval=FALSE}
+exit
+```
+
+
+That closes the session entirely. Or from anywhere on the cluster:
+```{bash, eval=FALSE}
+tmux kill-session -t mcav_sra_upload
+```
+
+
+
+Now go back to the NCBI portal, wait the 10 minutes if you haven't already, and refresh — MCAV_GE_8936_SRA_Submission should be selectable.
+
