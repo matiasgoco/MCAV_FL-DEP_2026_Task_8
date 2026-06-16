@@ -1,0 +1,257 @@
+---
+title: "MCAV DEP 2026 — Task 8 Deliverable Tables & Figures (GE-8936)"
+author: "Matias Gomez-Corrales"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(DT)
+library(knitr)
+library(kableExtra)
+```
+
+---
+
+# Overview
+
+BioProject: **PRJNA1478717** | SRA Submission: **SUB16257907** | Run: GE-8936, NovaSeq X, June 10 2026
+
+---
+
+# 1. Sequencing QC Summary
+
+```{r qc-data}
+qc <- tribble(
+  ~sample_id,                ~group,                                    ~reads_M, ~q30,  ~coverage,
+  "4-Control",               "Juvenile – Control (26°C)",               78.4,     96.1,  26.2,
+  "5-Control",               "Juvenile – Control (26°C)",               63.6,     95.9,  21.3,
+  "6-Control",               "Juvenile – Control (26°C)",               65.0,     96.2,  21.7,
+  "1-Plus-3",                "Juvenile – CBASS-1 (29°C)",               85.1,     96.1,  28.5,
+  "8-Plus-3",                "Juvenile – CBASS-1 (29°C)",               67.3,     95.9,  22.5,
+  "9-Plus-3",                "Juvenile – CBASS-1 (29°C)",               66.6,     95.9,  22.3,
+  "2-Plus-6",                "Juvenile – CBASS-2 (32°C)",               67.7,     95.8,  22.6,
+  "3-Plus-6",                "Juvenile – CBASS-2 (32°C)",               82.0,     95.5,  27.4,
+  "7-Plus-6",                "Juvenile – CBASS-2 (32°C)",               67.2,     96.2,  22.5,
+  "5-Control-replicate",     "Juvenile – Control (technical replicate)", 84.4,     96.2,  28.2,
+  "8-Plus-3-replicate",      "Juvenile – CBASS-1 (technical replicate)",65.2,     96.4,  21.8,
+  "7-Plus-6-replicate",      "Juvenile – CBASS-2 (technical replicate)",75.9,     96.3,  25.4,
+  "MC19-01",                 "Broodstock colony",                        74.4,     96.1,  24.9,
+  "MC19-04",                 "Broodstock colony",                        67.3,     96.2,  22.5,
+  "MC19-10",                 "Broodstock colony",                        77.5,     96.2,  25.9,
+  "MC19-18A",                "Broodstock colony",                        59.1,     96.1,  19.8,
+  "MC19-18B",                "Broodstock colony",                        58.3,     95.9,  19.5,
+  "MC20-01",                 "Broodstock colony",                        58.0,     96.1,  19.4,
+  "MC19-23A",                "Broodstock colony",                        62.1,     96.2,  20.8,
+  "MC19-23B",                "Broodstock colony",                        72.1,     96.1,  24.1,
+  "MC19-29",                 "Broodstock colony",                        69.9,     96.2,  23.4,
+  "MC19-31B",                "Broodstock colony",                        48.5,     95.9,  16.2,
+  "MC19-34",                 "Broodstock colony",                        64.6,     96.1,  21.6,
+  "MC24-01",                 "Broodstock colony",                        60.2,     96.3,  20.1,
+  "MC24-02",                 "Broodstock colony",                        55.7,     96.2,  18.6,
+  "MC19-18B-Sperm",          "Sperm sample",                             79.0,     96.2,  26.4,
+  "MC24-01-Sperm",           "Sperm sample",                             71.2,     96.1,  23.8,
+  "MC24-01-Sperm-replicate", "Sperm sample (technical replicate)",       88.1,     96.4,  29.5
+) %>%
+  mutate(
+    broad_group = case_when(
+      str_starts(group, "Juvenile")   ~ "Juvenile",
+      str_starts(group, "Broodstock") ~ "Broodstock",
+      str_starts(group, "Sperm")      ~ "Sperm"
+    ),
+    broad_group = factor(broad_group, levels = c("Juvenile", "Broodstock", "Sperm")),
+    sample_id   = factor(sample_id, levels = sample_id)  # preserve row order
+  )
+```
+
+## 1.1 Table
+
+```{r qc-table}
+qc %>%
+  select(
+    `Sample ID`         = sample_id,
+    `Sample Group`      = group,
+    `Reads after QC (M)` = reads_M,
+    `% ≥Q30`            = q30,
+    `Coverage (×)`      = coverage
+  ) %>%
+  datatable(
+    caption  = "Table 1. Per-sample sequencing QC summary (fastp, GE-8936). Reads = R1+R2 after adapter trimming and quality filtering. Coverage = (filtered reads × 150 bp) / 448,367,954 bp (M. cavernosa; Rippé et al. 2021).",
+    rownames = FALSE,
+    options  = list(pageLength = 30, scrollX = TRUE, dom = "tip"),
+    filter   = "top"
+  )
+```
+
+## 1.2 Summary Statistics
+
+```{r qc-stats}
+qc %>%
+  summarise(
+    n                   = n(),
+    `Mean reads (M)`    = round(mean(reads_M), 1),
+    `SD reads (M)`      = round(sd(reads_M), 1),
+    `Min reads (M)`     = min(reads_M),
+    `Max reads (M)`     = max(reads_M),
+    `Mean % ≥Q30`       = round(mean(q30), 2),
+    `Mean coverage (×)` = round(mean(coverage), 1),
+    `SD coverage (×)`   = round(sd(coverage), 1),
+    `Min coverage (×)`  = min(coverage),
+    `Max coverage (×)`  = max(coverage)
+  ) %>%
+  pivot_longer(everything(), names_to = "Statistic", values_to = "Value") %>%
+  kable(caption = "Summary across all 28 samples") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+---
+
+# 2. QC Figures
+
+```{r colours}
+grp_col <- c("Juvenile" = "#4682B4", "Broodstock" = "#2E8B57", "Sperm" = "#8B008B")
+```
+
+## 2.1 Coverage Depth
+
+```{r fig-coverage, fig.width=9, fig.height=10, dpi=150}
+ggplot(qc, aes(x = coverage, y = fct_rev(sample_id), fill = broad_group)) +
+  geom_col(width = 0.7) +
+  geom_vline(xintercept = mean(qc$coverage), linetype = "dashed",
+             colour = "grey30", linewidth = 0.7) +
+  annotate("text", x = mean(qc$coverage) + 0.3, y = 1.5,
+           label = paste0("Mean: ", round(mean(qc$coverage), 1), "×"),
+           hjust = 0, size = 3.2, colour = "grey30") +
+  scale_fill_manual(values = grp_col) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +
+  labs(title = "Figure 1. Estimated coverage depth per sample",
+       x = "Coverage (×)", y = NULL, fill = "Group",
+       caption = "Coverage = (filtered reads × 150 bp) / 448,367,954 bp (Rippé et al. 2021)") +
+  theme_classic(base_size = 11) +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold"))
+```
+
+## 2.2 Filtered Reads
+
+```{r fig-reads, fig.width=9, fig.height=10, dpi=150}
+ggplot(qc, aes(x = reads_M, y = fct_rev(sample_id), fill = broad_group)) +
+  geom_col(width = 0.7) +
+  geom_vline(xintercept = mean(qc$reads_M), linetype = "dashed",
+             colour = "grey30", linewidth = 0.7) +
+  annotate("text", x = mean(qc$reads_M) + 0.5, y = 1.5,
+           label = paste0("Mean: ", round(mean(qc$reads_M), 1), " M"),
+           hjust = 0, size = 3.2, colour = "grey30") +
+  scale_fill_manual(values = grp_col) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +
+  labs(title = "Figure 2. Total filtered reads per sample (fastp)",
+       x = "Reads after QC (millions, R1+R2)", y = NULL, fill = "Group") +
+  theme_classic(base_size = 11) +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold"))
+```
+
+## 2.3 % Bases ≥Q30
+
+```{r fig-q30, fig.width=11, fig.height=5.5, dpi=150}
+ggplot(qc, aes(x = sample_id, y = q30, fill = broad_group)) +
+  geom_col(width = 0.7) +
+  scale_fill_manual(values = grp_col) +
+  coord_cartesian(ylim = c(95, 97)) +
+  labs(title = "Figure 3. Base quality ≥Q30 per sample (post-filtering)",
+       x = NULL, y = "% Bases ≥Q30", fill = "Group") +
+  theme_classic(base_size = 11) +
+  theme(axis.text.x  = element_text(angle = 45, hjust = 1, size = 8),
+        legend.position = "bottom",
+        plot.title = element_text(face = "bold"))
+```
+
+---
+
+# 3. SRA Accession Numbers
+
+```{r sra-data}
+sra <- tribble(
+  ~sample_id,                ~group,                                    ~collection_date, ~biosample,      ~run_acc,       ~run_url,
+  "4-Control",               "Juvenile – Control (26°C)",               "2026-05-13",     "SAMN60904239",  "RUN:50613740", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613740",
+  "5-Control",               "Juvenile – Control (26°C)",               "2026-05-13",     "SAMN60904240",  "RUN:50613739", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613739",
+  "6-Control",               "Juvenile – Control (26°C)",               "2026-05-13",     "SAMN60904241",  "RUN:50613728", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613728",
+  "1-Plus-3",                "Juvenile – CBASS-1 (29°C)",               "2026-05-13",     "SAMN60904242",  "RUN:50613727", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613727",
+  "8-Plus-3",                "Juvenile – CBASS-1 (29°C)",               "2026-05-13",     "SAMN60904243",  "RUN:50613726", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613726",
+  "9-Plus-3",                "Juvenile – CBASS-1 (29°C)",               "2026-05-13",     "SAMN60904244",  "RUN:50613725", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613725",
+  "2-Plus-6",                "Juvenile – CBASS-2 (32°C)",               "2026-05-13",     "SAMN60904245",  "RUN:50613724", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613724",
+  "3-Plus-6",                "Juvenile – CBASS-2 (32°C)",               "2026-05-13",     "SAMN60904246",  "RUN:50613723", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613723",
+  "7-Plus-6",                "Juvenile – CBASS-2 (32°C)",               "2026-05-13",     "SAMN60904247",  "RUN:50613722", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613722",
+  "5-Control-replicate",     "Juvenile – Control (technical replicate)", "2026-05-13",     "SAMN60904248",  "RUN:50613721", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613721",
+  "8-Plus-3-replicate",      "Juvenile – CBASS-1 (technical replicate)","2026-05-13",     "SAMN60904249",  "RUN:50613720", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613720",
+  "7-Plus-6-replicate",      "Juvenile – CBASS-2 (technical replicate)","2026-05-13",     "SAMN60904250",  "RUN:50613719", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613719",
+  "MC19-01",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904251",  "RUN:50613718", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613718",
+  "MC19-04",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904252",  "RUN:50613717", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613717",
+  "MC19-10",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904253",  "RUN:50613716", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613716",
+  "MC19-18A",                "Broodstock colony",                        "2026-02-25",     "SAMN60904254",  "RUN:50613715", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613715",
+  "MC19-18B",                "Broodstock colony",                        "2026-02-25",     "SAMN60904255",  "RUN:50613714", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613714",
+  "MC20-01",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904256",  "RUN:50613713", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613713",
+  "MC19-23A",                "Broodstock colony",                        "2026-02-25",     "SAMN60904257",  "RUN:50613738", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613738",
+  "MC19-23B",                "Broodstock colony",                        "2026-02-25",     "SAMN60904258",  "RUN:50613737", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613737",
+  "MC19-29",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904259",  "RUN:50613736", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613736",
+  "MC19-31B",                "Broodstock colony",                        "2026-02-25",     "SAMN60904260",  "RUN:50613735", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613735",
+  "MC19-34",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904261",  "RUN:50613734", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613734",
+  "MC24-01",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904262",  "RUN:50613733", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613733",
+  "MC24-02",                 "Broodstock colony",                        "2026-02-25",     "SAMN60904263",  "RUN:50613732", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613732",
+  "MC19-18B-Sperm",          "Sperm sample",                             "2025-08",        "SAMN60904264",  "RUN:50613731", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613731",
+  "MC24-01-Sperm",           "Sperm sample",                             "2025-08",        "SAMN60904265",  "RUN:50613730", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613730",
+  "MC24-01-Sperm-replicate", "Sperm sample (technical replicate)",       "2025-08",        "SAMN60904266",  "RUN:50613729", "https://www.ncbi.nlm.nih.gov/sra/RUN:50613729"
+)
+```
+
+## 3.1 Table
+
+```{r sra-table}
+sra %>%
+  mutate(
+    run_acc = paste0('<a href="', run_url, '" target="_blank">', run_acc, "</a>")
+  ) %>%
+  select(
+    `Sample ID`          = sample_id,
+    `Sample Group`       = group,
+    `Collection Date`    = collection_date,
+    `BioSample`          = biosample,
+    `SRA Run Accession`  = run_acc
+  ) %>%
+  datatable(
+    caption  = "Table 2. BioSample and SRA run accessions (BioProject PRJNA1478717, Submission SUB16257907, filed June 12 2026). Click accession to open on NCBI.",
+    rownames = FALSE,
+    escape   = FALSE,
+    options  = list(pageLength = 30, scrollX = TRUE, dom = "tip"),
+    filter   = "top"
+  )
+```
+
+## 3.2 Counts by Group
+
+```{r sra-counts}
+sra %>%
+  mutate(broad = case_when(
+    str_starts(group, "Juvenile")   ~ "Juvenile",
+    str_starts(group, "Broodstock") ~ "Broodstock",
+    str_starts(group, "Sperm")      ~ "Sperm"
+  )) %>%
+  count(broad, name = "n") %>%
+  rename(Group = broad) %>%
+  kable(caption = "Samples per group") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+---
+
+# 4. Session Info
+
+```{r session-info}
+sessionInfo()
+```
