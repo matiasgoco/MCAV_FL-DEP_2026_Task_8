@@ -731,3 +731,275 @@ tmux kill-session -t mcav_sra_upload
 
 Now go back to the NCBI portal, wait the 10 minutes if you haven't already, and refresh — MCAV_GE_8936_SRA_Submission should be selectable.
 
+
+# Uploading 2 sequencing run
+
+Dear Dr. Gomez-Corrales,
+
+I hope this message finds you well. The sequencing for the second run of your project GE-8936 has been completed, and the results have been uploaded to a shared Globus collection which can be accessed using the following link:
+
+https://app.globus.org/file-manager?origin_id=cad16746-b614-427a-83b9-50f92d6e3e1e&origin_path=%2FNSU-JLopez%2F
+
+We ask that you please arrange for the storage of this data within one week. The above link is only intended for temporarily staging the data.
+
+Best,
+Emil
+
+TASK DETAILS
+Task ID: a4decb74-7194-11f1-8200-0afff5fcf7d7
+Task Type: TRANSFER
+Status: SUCCEEDED
+Source: ICBR-Customer-Data
+Destination: MGC_Mac_Book
+Label: n/a
+Request Time: 2026-06-26 19:24:26.262665 (UTC)
+Completion Time: 2026-06-26 20:01:10.838129 (UTC)
+Files Transfered: 75
+Directories Transfered: 31
+Bytes Transfered: 53075130292
+Effective Speed: 24074989 Bytes per Second
+Transfer Settings:
+- verify file integrity after transfer
+- transfer is encrypted
+- overwriting all files on destination
+
+View the task in the Globus Web app here:
+https://nam10.safelinks.protection.outlook.com/?url=https%3A%2F%2Fapp.globus.org%2Factivity%2Fa4decb74-7194-11f1-8200-0afff5fcf7d7%2Foverview&data=05%7C02%7Cmgomezco%40nova.edu%7C8ef14a227b3744378d8e08ded3bdcb2d%7C2c2b2d312e3e4df1b571fb37c042ff1b%7C0%7C0%7C639181009455593852%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=YWNzjcCqk49RXp25eyubC56UO6%2FD6xmEsWRO4WF26Js%3D&reserved=0
+
+The list of successfully transferred files will be available for 30 days after the transfer is complete. You can view the list at:
+https://nam10.safelinks.protection.outlook.com/?url=https%3A%2F%2Fapp.globus.org%2Factivity%2Fa4decb74-7194-11f1-8200-0afff5fcf7d7%2Fevents%3Ffilter%3Dsuccessful_transfers&data=05%7C02%7Cmgomezco%40nova.edu%7C8ef14a227b3744378d8e08ded3bdcb2d%7C2c2b2d312e3e4df1b571fb37c042ff1b%7C0%7C0%7C639181009455624612%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=5PbpkdA%2FbnTLCpDbFGckCu2282x10DzXhLlEJUaURKc%3D&reserved=0
+
+This is a courtesy notification. Please do not reply to this email.
+
+The Globus Team
+
+
+Connect to NSU VPN if off campus
+
+NOte: $ indicates run code to differentiate from output, in other words you dont type the dollar sign.
+
+```{bash, eval=FALSE}
+$ ssh mgomezco@researchhpc.nova.edu
+```
+
+Check quota
+
+```{bash,  eval=FALSE}
+$ quota -s
+```
+
+```{bash,  eval=FALSE}
+Disk quotas for user mgomezco (uid 1012): 
+     Filesystem   space   quota   limit   grace   files   quota   limit   grace
+172.16.8.31:/cm/shared
+                  3301G   6192G   6292G            181k    500k    505k  
+```
+
+From laptop local terminal and connected to NSU VPN type,
+
+Use rsync — it's resumable, shows progress, and skips files already transferred if interrupted:
+
+Flags:
+
+-a — archive mode (preserves permissions, timestamps, subdirs)
+-v — verbose (shows files as they transfer)
+-z — compresses during transfer (helps for FASTQ files)
+-P — shows progress per file AND allows resume if interrupted
+Key advantage over scp -r: if the connection drops mid-transfer, just re-run the exact same command and it picks up where it left off — already-transferred files are skipped.
+
+Note the trailing / after the destination path — this puts the folder inside MCAV_DEP_2026_Parentage_CBASS/ (not next to it).
+
+If it's a very large dataset and transfer speed is a bottleneck, you already have Aspera installed on the cluster, but rsync is simpler for local→cluster pushes.
+
+```{bash, eval=FALSE}
+$ rsync -avzP \
+  /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936/GE-8936-Run2 \
+  mgomezco@researchhpc.nova.edu:~/MCAV_DEP_2026_Parentage_CBASS/
+```
+
+# Move Run2 reads to flat folder for SRA submission
+
+Run2 has 27 samples (GE-8936_25 / MC24-01-Sperm-replicate is absent from this run). Lane is L007.
+
+```{bash, eval=FALSE}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS
+```
+
+Count fastq.gz files:
+
+```{bash, eval=FALSE}
+$ find GE-8936-Run2/GE-8936-JLopez-10B-23KTNFLT3-Lane7 -type f -name "*.fastq.gz" | wc -l
+```
+
+```{bash, eval=FALSE}
+54
+```
+
+54 files is correct: 27 samples × 2 (paired-end) = 54
+
+Create SRA submission folder and move files:
+
+```{bash, eval=FALSE}
+$ mkdir MCAV_GE_8936_Run2_SRA_Submission
+
+$ find GE-8936-Run2/GE-8936-JLopez-10B-23KTNFLT3-Lane7 -type f -name "*.fastq.gz" -exec mv {} MCAV_GE_8936_Run2_SRA_Submission/ \;
+```
+
+Verify:
+
+```{bash, eval=FALSE}
+$ ls MCAV_GE_8936_Run2_SRA_Submission | wc -l
+```
+
+```{bash, eval=FALSE}
+54
+```
+
+# Fastp — Run2
+
+```{bash, eval=FALSE}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts
+```
+
+Verify file list and order before submitting:
+
+```{bash, eval=FALSE}
+$ find /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission -type f -name "*_R1_001.fastq.gz" | sort
+```
+
+
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/1-Plus-3_S19_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/2-Plus-6_S22_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/3-Plus-6_S23_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/4-Control_S16_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/5-Control-replicate_S25_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/5-Control_S17_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/6-Control_S18_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/7-Plus-6-replicate_S27_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/7-Plus-6_S24_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/8-Plus-3-replicate_S26_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/8-Plus-3_S20_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/9-Plus-3_S21_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-01_S1_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-04_S2_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-10_S3_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-18A_S4_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-18B_S5_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-18B-Sperm_S14_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-23A_S7_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-23B_S8_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-29_S9_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-31B_S10_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC19-34_S11_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC20-01_S6_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC24-01_S12_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC24-01-Sperm_S15_L007_R1_001.fastq.gz
+/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission/MC24-02_S13_L007_R1_001.fastq.gz
+
+
+
+```{bash, eval=FALSE}
+$ nano MCAV_GE_8936_Run2_fastp_run.sh
+```
+
+```{bash, eval=FALSE}
+#!/bin/bash
+#SBATCH --job-name=MCAV_GE_8936_Run2_fastp
+#SBATCH --output=/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/MCAV_GE_8936_Run2_fastp_%a.out
+#SBATCH --error=/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/Scripts/MCAV_GE_8936_Run2_fastp_%a.err
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+#SBATCH --time=06:00:00
+#SBATCH --array=1-27
+#SBATCH --mail-user=mgomezco@nova.edu
+# Notify at start, end, or failure
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+module load fastp
+
+INPUT_DIR="/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/MCAV_GE_8936_Run2_SRA_Submission"
+OUTPUT_DIR="/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936_Run2"
+mkdir -p "$OUTPUT_DIR"
+
+# Build sorted list of R1 files; pick the one matching this array index
+R1=$(find "$INPUT_DIR" -type f -name "*_R1_001.fastq.gz" | sort | sed -n "${SLURM_ARRAY_TASK_ID}p")
+
+BASE=$(basename "$R1" "_R1_001.fastq.gz")
+R2="${R1/_R1_001.fastq.gz/_R2_001.fastq.gz}"
+
+fastp \
+    -i "$R1" \
+    -I "$R2" \
+    -o "$OUTPUT_DIR/${BASE}_R1.clean.fastq.gz" \
+    -O "$OUTPUT_DIR/${BASE}_R2.clean.fastq.gz" \
+    -q 20 -u 20 -n 5 \
+    --detect_adapter_for_pe \
+    --correction \
+    --length_required 50 \
+    -h "$OUTPUT_DIR/${BASE}_fastp.html" \
+    -j "$OUTPUT_DIR/${BASE}_fastp.json" \
+    -w 4
+```
+
+Key differences from Run1: `--array=1-27` (27 samples, GE-8936_25 absent), output dir `fastp_clean_reads_GE_8936_Run2`, input from `MCAV_GE_8936_Run2_SRA_Submission`.
+
+```{bash, eval=FALSE}
+$ sbatch MCAV_GE_8936_Run2_fastp_run.sh
+```
+
+Check job status:
+Submitted batch job 18457
+```{bash, eval=FALSE}
+$ sacct -j 18457 --format=JobID,JobName,State,ExitCode,Elapsed
+```
+
+Count HTML reports when complete:
+
+```{bash, eval=FALSE}
+$ ls ../fastp_clean_reads_GE_8936_Run2/*html | wc -l
+```
+
+```{bash, eval=FALSE}
+27
+```
+
+# MultiQC on Fastp reports — Run2
+
+```{bash, eval=FALSE}
+$ cd /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS
+
+$ module load multiqc/1.29 
+
+$ multiqc ./fastp_clean_reads_GE_8936_Run2/ -o ./fastp_clean_reads_GE_8936_Run2/
+```
+
+```{bash, eval=FALSE}
+/// MultiQC 🔍 v1.29
+
+     version_check | MultiQC Version v1.35 now available!
+       file_search | Search path: /home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936_Run2
+         searching | ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 108/108  
+             fastp | Found 27 reports
+     write_results | Data        : fastp_clean_reads_GE_8936_Run2/multiqc_data
+     write_results | Report      : fastp_clean_reads_GE_8936_Run2/multiqc_report.html
+           multiqc | MultiQC complete
+```
+
+
+Rename report:
+
+```{bash, eval=FALSE}
+$ mv ./fastp_clean_reads_GE_8936_Run2/multiqc_report.html \
+  ./fastp_clean_reads_GE_8936_Run2/MCAV_Sequencing_Results_GE_8936_Run2_FastP_MultiQC_report.html
+```
+
+Download to local — from a local terminal window:
+
+```{bash, eval=FALSE}
+$ scp mgomezco@researchhpc.nova.edu:/home/mgomezco/MCAV_DEP_2026_Parentage_CBASS/fastp_clean_reads_GE_8936_Run2/MCAV_Sequencing_Results_GE_8936_Run2_FastP_MultiQC_report.html \
+  /Users/matiasgcvc/Desktop/NCRI_Nova_University_2024/Grants/DEP_CPR_2025/New_DEP_2026/MCAV_Genomics_2026/MCAV_ICBR_Sequencing/MCAV_Sequencing_Results_GE-8936/
+```
+
+
+
